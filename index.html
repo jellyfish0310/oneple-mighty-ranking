@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>원플 마이티 랭킹</title>
+
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background:#f6f7fb; color:#111; }
+    header { display:flex; align-items:center; gap:14px; padding:16px 18px; background:#fff; border-bottom:1px solid #e6e8ef; }
+    header img { width:52px; height:auto; }
+    header h1 { font-size:20px; margin:0; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
+
+    .tabs { display:flex; gap:10px; margin: 12px 0 16px; flex-wrap: wrap; }
+    .tabbtn { border:1px solid #d7dbe7; background:#fff; padding:10px 12px; border-radius:10px; cursor:pointer; }
+    .tabbtn.active { background:#111; color:#fff; border-color:#111; }
+
+    .card { background:#fff; border:1px solid #e6e8ef; border-radius:14px; padding:14px; margin-bottom:14px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+    .grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
+    .grid3 { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:10px; }
+    label { display:block; font-size:12px; color:#444; margin-bottom:6px; }
+    input[type="text"], input[type="number"], input[type="password"] {
+      width:100%; padding:10px; border:1px solid #d7dbe7; border-radius:10px; outline:none;
+    }
+    input[type="checkbox"] { transform: translateY(1px); }
+    .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .btn { padding:10px 12px; border:1px solid #111; background:#111; color:#fff; border-radius:10px; cursor:pointer; }
+    .btn.gray { border-color:#d7dbe7; background:#fff; color:#111; }
+    .hint { font-size:12px; color:#666; }
+    .danger { color:#b00020; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { border-bottom:1px solid #eef0f6; padding:10px; text-align:left; font-size:14px; }
+    th { font-size:12px; color:#555; }
+    .right { text-align:right; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px; }
+    .hidden { display:none; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <img src="logo.png" alt="ONEPLE 로고" onerror="this.style.display='none'">
+    <h1>원플 마이티 랭킹</h1>
+  </header>
+
+  <div class="wrap">
+    <div class="tabs">
+      <button class="tabbtn active" data-tab="calc">점수 계산</button>
+      <button class="tabbtn" data-tab="ranking">랭킹</button>
+      <button class="tabbtn" data-tab="admin">관리자 권한</button>
+    </div>
+
+    <!-- ====== 점수 계산 탭 ====== -->
+    <section id="tab-calc">
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div class="hint">계산하기를 누르면 <b>자동으로 기록이 저장</b>되고 누적에 반영됩니다.</div>
+            <div class="hint">※ 화면에는 <b>수식이 아닌 점수 변동 결과만</b> 표시됩니다.</div>
+          </div>
+          <div class="hint mono" id="termLabel"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="grid">
+          <div>
+            <label>주공</label>
+            <input id="mainName" type="text" placeholder="예: A" />
+          </div>
+
+          <div>
+            <div class="row" style="justify-content:space-between">
+              <label style="margin:0;">프렌드</label>
+              <label class="hint" style="margin:0;">
+                <input id="chkNoFriendInput" type="checkbox" />
+                노프렌드(프렌드→시민)
+              </label>
+            </div>
+            <input id="friendName" type="text" placeholder="예: B" />
+          </div>
+        </div>
+
+        <div class="grid3" style="margin-top:10px;">
+          <div>
+            <label>시민1</label>
+            <input id="c1Name" type="text" placeholder="예: C" />
+          </div>
+          <div>
+            <label>시민2</label>
+            <input id="c2Name" type="text" placeholder="예: D" />
+          </div>
+          <div>
+            <label>시민3</label>
+            <input id="c3Name" type="text" placeholder="예: E" />
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top:10px;">
+          <div>
+            <label>공약(주공이 처음 선언)</label>
+            <input id="pledge" type="number" placeholder="예: 15" />
+          </div>
+          <div>
+            <label>점수(주공 점수 카드 수)</label>
+            <input id="score" type="number" placeholder="예: 17" />
+          </div>
+        </div>
+
+        <!-- ✅ 체크박스는 노프렌드/노기루만 -->
+        <div class="card" style="margin-top:12px;">
+          <div class="row" style="gap:14px;">
+            <label class="hint"><input id="optNogiru" type="checkbox"> 노기루(기루 미설정)</label>
+            <label class="hint"><input id="optNofriend" type="checkbox"> 노프렌드(친구 없이)</label>
+          </div>
+          <div class="hint">
+            ※ 런(run)은 <b>점수=20</b>이면 자동 적용 / 백런(backrun)은 <b>패배 & 점수&lt;10</b>이면 자동 적용
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <button class="btn" id="btnCalcAndSave">계산하기(자동 저장)</button>
+          <span class="hint" id="calcMsg"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 10px;">결과(점수 변동)</h3>
+        <table>
+          <thead>
+            <tr><th>이름</th><th class="right">점수 변동</th></tr>
+          </thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ====== 랭킹 탭 ====== -->
+    <section id="tab-ranking" class="hidden">
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <h3 style="margin:0;">랭킹</h3>
+            <div class="hint">학기별 누적 점수 랭킹입니다.</div>
+          </div>
+          <div class="row">
+            <button class="btn gray" id="btnRefreshRanking">새로고침</button>
+          </div>
+        </div>
+        <div class="hint mono" id="rankingTermLabel" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>#</th><th>이름</th><th class="right">누적 점수</th></tr>
+          </thead>
+          <tbody id="rankingBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ====== 관리자 탭 ====== -->
+    <section id="tab-admin" class="hidden">
+      <div class="card" id="adminLoginCard">
+        <h3 style="margin:0 0 10px;">관리자 권한</h3>
+        <div class="hint">비밀번호를 입력해야 기록 열람/삭제/수정 및 누적 조작이 가능합니다.</div>
+        <div class="row" style="margin-top:10px;">
+          <!-- ✅ 초기 비밀번호 안내 문구 삭제 -->
+          <input id="adminPw" type="password" placeholder="비밀번호 입력" />
+          <button class="btn" id="btnAdminLogin">확인</button>
+          <span class="hint" id="adminMsg"></span>
+        </div>
+      </div>
+
+      <div class="card hidden" id="adminPanelCard">
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <h3 style="margin:0;">관리자 패널</h3>
+            <div class="hint">기록 시간 열람, 기록 삭제/수정, 누적 점수 조작, 비밀번호 변경</div>
+          </div>
+          <button class="btn gray" id="btnAdminLogout">로그아웃</button>
+        </div>
+
+        <div class="row" style="margin-top:12px; gap:10px;">
+          <button class="btn gray" id="btnLoadRecords">기록 불러오기</button>
+          <button class="btn gray" id="btnLoadRankingAdmin">누적(랭킹) 불러오기</button>
+          <span class="hint mono" id="adminTermLabel"></span>
+        </div>
+
+        <hr style="border:none; border-top:1px solid #eef0f6; margin:14px 0;">
+
+        <div class="grid">
+          <div class="card" style="margin:0;">
+            <h4 style="margin:0 0 8px;">비밀번호 변경</h4>
+            <div class="row">
+              <input id="newAdminPw" type="password" placeholder="새 비밀번호" />
+              <button class="btn" id="btnChangePw">변경</button>
+            </div>
+            <div class="hint danger" id="pwChangeMsg"></div>
+          </div>
+
+          <div class="card" style="margin:0;">
+            <h4 style="margin:0 0 8px;">누적 점수 강제 설정</h4>
+            <div class="row">
+              <input id="forceName" type="text" placeholder="이름" />
+              <input id="forceTotal" type="number" placeholder="누적 점수" />
+              <button class="btn" id="btnForceTotal">적용</button>
+            </div>
+            <div class="hint danger" id="forceMsg"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+          <h4 style="margin:0 0 8px;">기록 목록</h4>
+          <div class="hint">삭제하면 해당 기록의 누적도 함께 취소됩니다.</div>
+          <div style="overflow:auto; margin-top:10px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>시간</th><th>주공</th><th>프렌드</th><th>시민1</th><th>시민2</th><th>시민3</th>
+                  <th class="right">Δ주공</th><th class="right">Δ프렌드</th>
+                  <th class="right">Δ시민1</th><th class="right">Δ시민2</th><th class="right">Δ시민3</th>
+                  <th>관리</th>
+                </tr>
+              </thead>
+              <tbody id="recordsBody"></tbody>
+            </table>
+          </div>
+          <div class="hint danger" id="recordsMsg"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+<script>
+  /******************************************************
+   * ONEPLE MIGHTY RANKING - Frontend
+   * 변경점:
+   *  - 계산 버튼 = 자동 저장(addRecord) 고정
+   *  - 체크박스: 노프렌드/노기루만
+   *  - run/backrun은 입력값 기반 자동 계산
+   ******************************************************/
+
+  // ✅ 본인 Apps Script 웹앱 URL로 변경
+  const API_URL = "https://script.google.com/macros/s/AKfycbwVjEI1MdABBabH0O9nfmhyBISNBrjmwsj-KNfZoTZpPyzQyNtrMGGSR02x2WdKjT85/exec";
+
+  let adminPassword = "";
+
+  function getTermByDate(d = new Date()) {
+
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    if (m >= 3 && m <= 8) return `${y}-1`;
+    if (m >= 9 && m <= 12) return `${y}-2`;
+    return `${y-1}-2`;
+  }
+  const CURRENT_TERM = getTermByDate();
+
+  document.getElementById("termLabel").textContent = `현재 학기: ${CURRENT_TERM}`;
+  document.getElementById("rankingTermLabel").textContent = `현재 학기: ${CURRENT_TERM}`;
+  document.getElementById("adminTermLabel").textContent = `현재 학기: ${CURRENT_TERM}`;
+
+  // 탭 전환
+  const tabBtns = document.querySelectorAll(".tabbtn");
+  tabBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      tabBtns.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const tab = btn.dataset.tab;
+      document.getElementById("tab-calc").classList.toggle("hidden", tab !== "calc");
+      document.getElementById("tab-ranking").classList.toggle("hidden", tab !== "ranking");
+      document.getElementById("tab-admin").classList.toggle("hidden", tab !== "admin");
+    });
+  });
+
+  async function apiPost(action, payload = {}) {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, ...payload })
+    });
+    return await res.json();
+  }
+
+  // 노프렌드 입력 모드(프렌드 -> 시민 처리)와 옵션 노프렌드 동기화
+  const chkNoFriendInput = document.getElementById("chkNoFriendInput");
+  const optNofriend = document.getElementById("optNofriend");
+  chkNoFriendInput.addEventListener("change", () => {
+    // UI에서 노프렌드 모드 체크하면, 옵션 노프렌드도 자동 체크되게(배수/역할 반영)
+    if (chkNoFriendInput.checked) optNofriend.checked = true;
+  });
+
+  function getPayloadFromInputs() {
+    const pledge = Number(document.getElementById("pledge").value);
+    const score  = Number(document.getElementById("score").value);
+
+    // ✅ run/backrun 자동 계산
+    const isLose = pledge > score;         // 질문 기준: 공약>점수면 패배
+    const run = (score === 20);            // 런: 20점
+    const backrun = (isLose && score < 10);// 백런: 패배 + 점수<10
+
+    return {
+      term: CURRENT_TERM,
+      mainName: document.getElementById("mainName").value.trim(),
+      friendName: document.getElementById("friendName").value.trim(),
+      c1Name: document.getElementById("c1Name").value.trim(),
+      c2Name: document.getElementById("c2Name").value.trim(),
+      c3Name: document.getElementById("c3Name").value.trim(),
+      pledge,
+      score,
+
+      // ✅ 체크는 노기루/노프렌드만 노출하지만, 백엔드에서 기대하는 필드는 유지
+      run,
+      backrun,
+      nogiru: document.getElementById("optNogiru").checked,
+      nofriend: document.getElementById("optNofriend").checked
+    };
+  }
+
+  function formatSigned(n) {
+    const v = Number(n || 0);
+    if (v > 0) return `+${v}`;
+    return String(v);
+  }
+  function escapeHtml(s) {
+    return String(s)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function renderResult(payload, deltas) {
+    const rows = [];
+    if (payload.mainName) rows.push([payload.mainName, deltas.main]);
+    if (payload.friendName) rows.push([payload.friendName, deltas.friend]);
+    if (payload.c1Name) rows.push([payload.c1Name, deltas.c1]);
+    if (payload.c2Name) rows.push([payload.c2Name, deltas.c2]);
+    if (payload.c3Name) rows.push([payload.c3Name, deltas.c3]);
+
+    const body = document.getElementById("resultBody");
+    body.innerHTML = rows.map(([name, delta]) => `
+      <tr>
+        <td>${escapeHtml(name)}</td>
+        <td class="right">${formatSigned(delta)}</td>
+      </tr>
+    `).join("");
+  }
+
+  // ✅ 계산하기(자동 저장) 버튼 = addRecord만 호출
+  document.getElementById("btnCalcAndSave").addEventListener("click", async () => {
+    const msg = document.getElementById("calcMsg");
+    msg.textContent = "저장 중...";
+    try {
+      const payload = getPayloadFromInputs();
+
+      // 간단 검증(원하면 더 강화 가능)
+      if (!payload.mainName) throw new Error("주공 이름을 입력하세요.");
+      if (Number.isNaN(payload.pledge) || Number.isNaN(payload.score)) throw new Error("공약/점수를 숫자로 입력하세요.");
+
+      const data = await apiPost("addRecord", { payload });
+      if (!data.ok) throw new Error(data.error || "저장 실패");
+
+      renderResult(payload, data.calc.deltas);
+      msg.textContent = `저장 완료! 결과: ${data.calc.result}`;
+    } catch (e) {
+      msg.textContent = `오류: ${e.message}`;
+    }
+  });
+
+  // 랭킹
+  async function loadRanking() {
+    const body = document.getElementById("rankingBody");
+    body.innerHTML = `<tr><td colspan="3" class="hint">불러오는 중...</td></tr>`;
+    try {
+      const data = await apiPost("getRanking", { term: CURRENT_TERM });
+      if (!data.ok) throw new Error(data.error || "랭킹 실패");
+
+      const list = data.ranking || [];
+      if (list.length === 0) {
+        body.innerHTML = `<tr><td colspan="3" class="hint">아직 기록이 없습니다.</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = list.map((r, i) => `
+        <tr>
+          <td>${i+1}</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td class="right">${formatSigned(r.total)}</td>
+        </tr>
+      `).join("");
+    } catch (e) {
+      body.innerHTML = `<tr><td colspan="3" class="danger">오류: ${escapeHtml(e.message)}</td></tr>`;
+    }
+  }
+  document.getElementById("btnRefreshRanking").addEventListener("click", loadRanking);
+
+  // 관리자 로그인/로그아웃
+  document.getElementById("btnAdminLogin").addEventListener("click", () => {
+    adminPassword = document.getElementById("adminPw").value;
+    if (!adminPassword) {
+      document.getElementById("adminMsg").textContent = "비밀번호를 입력하세요.";
+      return;
+    }
+    document.getElementById("adminMsg").textContent = "로그인됨. 기록 불러오기를 눌러 확인하세요.";
+    document.getElementById("adminLoginCard").classList.add("hidden");
+    document.getElementById("adminPanelCard").classList.remove("hidden");
+  });
+
+  document.getElementById("btnAdminLogout").addEventListener("click", () => {
+    adminPassword = "";
+    document.getElementById("adminPw").value = "";
+    document.getElementById("adminLoginCard").classList.remove("hidden");
+    document.getElementById("adminPanelCard").classList.add("hidden");
+  });
+
+  // 관리자: 기록 불러오기(삭제 포함)
+  document.getElementById("btnLoadRecords").addEventListener("click", async () => {
+    const msg = document.getElementById("recordsMsg");
+    msg.textContent = "";
+    const body = document.getElementById("recordsBody");
+    body.innerHTML = `<tr><td colspan="12" class="hint">불러오는 중...</td></tr>`;
+
+    try {
+      const data = await apiPost("admin_getRecords", { term: CURRENT_TERM, password: adminPassword });
+      if (!data.ok) throw new Error(data.error || "관리자 기록 조회 실패");
+
+      const list = data.records || [];
+      if (list.length === 0) {
+        body.innerHTML = `<tr><td colspan="12" class="hint">기록이 없습니다.</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = list.map(r => `
+        <tr>
+          <td class="mono">${escapeHtml(r.timestamp)}</td>
+          <td>${escapeHtml(r["주공"] || "")}</td>
+          <td>${escapeHtml(r["프렌드"] || "")}</td>
+          <td>${escapeHtml(r["시민1"] || "")}</td>
+          <td>${escapeHtml(r["시민2"] || "")}</td>
+          <td>${escapeHtml(r["시민3"] || "")}</td>
+          <td class="right">${formatSigned(r["delta_주공"])}</td>
+          <td class="right">${formatSigned(r["delta_프렌드"])}</td>
+          <td class="right">${formatSigned(r["delta_시민1"])}</td>
+          <td class="right">${formatSigned(r["delta_시민2"])}</td>
+          <td class="right">${formatSigned(r["delta_시민3"])}</td>
+          <td><button class="btn gray" data-del="${escapeHtml(r.record_id)}">삭제</button></td>
+        </tr>
+      `).join("");
+
+      body.querySelectorAll("button[data-del]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = btn.getAttribute("data-del");
+          if (!confirm(`기록 삭제: ${id}\n삭제하면 누적도 함께 취소됩니다. 진행할까요?`)) return;
+          try {
+            const delRes = await apiPost("admin_deleteRecord", { term: CURRENT_TERM, password: adminPassword, recordId: id });
+            if (!delRes.ok) throw new Error(delRes.error || "삭제 실패");
+            document.getElementById("btnLoadRecords").click();
+          } catch (e) {
+            msg.textContent = `삭제 오류: ${e.message}`;
+          }
+        });
+      });
+
+    } catch (e) {
+      body.innerHTML = `<tr><td colspan="12" class="danger">오류: ${escapeHtml(e.message)}</td></tr>`;
+    }
+  });
+
+  // 관리자: 누적 강제 설정
+  document.getElementById("btnForceTotal").addEventListener("click", async () => {
+    const msg = document.getElementById("forceMsg");
+    msg.textContent = "";
+    try {
+      const name = document.getElementById("forceName").value.trim();
+      const total = Number(document.getElementById("forceTotal").value);
+      if (!name) throw new Error("이름을 입력하세요.");
+      const data = await apiPost("admin_setTotal", { term: CURRENT_TERM, password: adminPassword, name, total });
+      if (!data.ok) throw new Error(data.error || "적용 실패");
+      msg.textContent = "적용 완료!";
+    } catch (e) {
+      msg.textContent = e.message;
+    }
+  });
+
+  // 관리자: 비밀번호 변경
+  document.getElementById("btnChangePw").addEventListener("click", async () => {
+    const msg = document.getElementById("pwChangeMsg");
+    msg.textContent = "";
+    try {
+      const newPassword = document.getElementById("newAdminPw").value.trim();
+      if (!newPassword) throw new Error("새 비밀번호를 입력하세요.");
+      const data = await apiPost("admin_setPassword", { password: adminPassword, newPassword });
+      if (!data.ok) throw new Error(data.error || "변경 실패");
+      msg.textContent = "변경 완료!";
+    } catch (e) {
+      msg.textContent = e.message;
+    }
+  });
+
+  document.getElementById("btnLoadRankingAdmin").addEventListener("click", loadRanking);
+
+  loadRanking();
+</script>
+</body>
+</html>
