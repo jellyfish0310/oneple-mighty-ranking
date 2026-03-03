@@ -253,7 +253,7 @@
     const y = d.getFullYear();
     const m = d.getMonth() + 1;
     if (m >= 3 && m <= 8) return `${y}-1`;
-    
+
     if (m >= 9 && m <= 12) return `${y}-2`;
     return `${y-1}-2`;
   }
@@ -334,22 +334,31 @@
       .replaceAll("'","&#039;");
   }
 
-  function renderResult(payload, deltas) {
-    const rows = [];
-    if (payload.mainName) rows.push([payload.mainName, deltas.main]);
-    if (payload.friendName) rows.push([payload.friendName, deltas.friend]);
-    if (payload.c1Name) rows.push([payload.c1Name, deltas.c1]);
-    if (payload.c2Name) rows.push([payload.c2Name, deltas.c2]);
-    if (payload.c3Name) rows.push([payload.c3Name, deltas.c3]);
+ function renderResult(payload, deltas) {
+  const rows = [];
 
-    const body = document.getElementById("resultBody");
-    body.innerHTML = rows.map(([name, delta]) => `
-      <tr>
-        <td>${escapeHtml(name)}</td>
-        <td class="right">${formatSigned(delta)}</td>
-      </tr>
-    `).join("");
+  // 주공
+  if (payload.mainName) rows.push({ label: "주공", name: payload.mainName, delta: deltas.main });
+
+  // 프렌드(또는 노프렌드 시 시민 표기)
+  if (payload.friendName) {
+    const friendLabel = payload.nofriend ? "시민(노프렌드)" : "프렌드";
+    rows.push({ label: friendLabel, name: payload.friendName, delta: deltas.friend });
   }
+
+  // 시민들
+  if (payload.c1Name) rows.push({ label: "시민", name: payload.c1Name, delta: deltas.c1 });
+  if (payload.c2Name) rows.push({ label: "시민", name: payload.c2Name, delta: deltas.c2 });
+  if (payload.c3Name) rows.push({ label: "시민", name: payload.c3Name, delta: deltas.c3 });
+
+  const body = document.getElementById("resultBody");
+  body.innerHTML = rows.map(r => `
+    <tr>
+      <td>${escapeHtml(r.label)} · ${escapeHtml(r.name)}</td>
+      <td class="right">${formatSigned(r.delta)}</td>
+    </tr>
+  `).join("");
+}
 
   // ✅ 계산하기(자동 저장) 버튼 = addRecord만 호출
   document.getElementById("btnCalcAndSave").addEventListener("click", async () => {
