@@ -244,7 +244,7 @@
    ******************************************************/
 
   // ✅ 본인 Apps Script 웹앱 URL로 변경
-  const API_URL = "https://script.google.com/macros/s/AKfycbwVjEI1MdABBabH0O9nfmhyBISNBrjmwsj-KNfZoTZpPyzQyNtrMGGSR02x2WdKjT85/exec";
+  const API_URL = https://script.google.com/macros/s/AKfycbwVjEI1MdABBabH0O9nfmhyBISNBrjmwsj-KNfZoTZpPyzQyNtrMGGSR02x2WdKjT85/exec;
 
   let adminPassword = "";
 
@@ -253,6 +253,7 @@
     const y = d.getFullYear();
     const m = d.getMonth() + 1;
     if (m >= 3 && m <= 8) return `${y}-1`;
+    
     if (m >= 9 && m <= 12) return `${y}-2`;
     return `${y-1}-2`;
   }
